@@ -14,7 +14,7 @@ $ screen /dev/ttyACM0 1000000
 ## To quit screen
 
 ```concole
-$ C-a C-k y
+$ C-a k y
 ```
 
 ## To quit screen
