@@ -2,19 +2,20 @@
 #include <stdlib.h>
 #include <avr/io.h>
 
-#include "print.h"
+#define PRINTF_IMPLEMENTATION
+#include "printf.h"
 
 #include <math.h>
 #include <unistd.h>
 
-// #include "resolveur_EDO.h"
-#include "graphique.h"
+#define GLIPH_SPACEPADDED // Needed to avoid write() that does not existe with avr-gcc
+#define GLIPH_IMPLEMENTATION
+#include "gliph.h"
 
-#define HEIGHT (9*3)
-#define WIDTH (16*3)
+#define HEIGHT (3*9)
+#define WIDTH (3*16)
 
 #define BUFFER_LENGTH_TRAINE 10
-// #define FILEPATH "test.csv"
 #define carre(x) ((x)*(x))
 #define UNUSED(x) (void)(x)
 #ifndef ABS
@@ -286,51 +287,54 @@ Vector2 adaptation_coord_fenetre(Vector2 a)
 }
 
 // void tracage_double_pendule(int i, Double_pendule *Dp, Color cl, Var_Dp VDp)
-void tracage_double_pendule(int i, Double_pendule *Dp, Var_Dp VDp, char **cl)
+// void tracage_double_pendule(int i, Double_pendule *Dp, Var_Dp VDp, char **cl)
+void tracage_double_pendule(int i, Double_pendule *Dp, Var_Dp VDp, Screen cl)
 {
-    cons_clear(cl, WIDTH, HEIGHT, ' ');
+    static const short midH = HEIGHT/2;
+    static const short midW = WIDTH/2;
+    ConsoleClear(cl, '#');
+    PrintRectangle(cl, 1, 1, WIDTH-2, HEIGHT-2, ' ');
 
     // Calcul des nouvelles coordonnées du pendule
-    Dp->boule_1.x = 7.f*VDp.l1*sin(VDp.theta_1);
-    Dp->boule_1.y = -7.f*VDp.l1*cos(VDp.theta_1);
-    Dp->boule_2.x = 7.f*VDp.l2*sin(VDp.theta_2) + Dp->boule_1.x;
-    Dp->boule_2.y = -7.f*VDp.l2*cos(VDp.theta_2) + Dp->boule_1.y;
+    Dp->boule_1.x = 7.f*VDp.l1*sinf(VDp.theta_1);
+    Dp->boule_1.y = -7.f*VDp.l1*cosf(VDp.theta_1);
+    Dp->boule_2.x = 7.f*VDp.l2*sinf(VDp.theta_2) + Dp->boule_1.x;
+    Dp->boule_2.y = -7.f*VDp.l2*cosf(VDp.theta_2) + Dp->boule_1.y;
 
     Dp->boule_1 = adaptation_coord_fenetre(Dp->boule_1);
     Dp->boule_2 = adaptation_coord_fenetre(Dp->boule_2);
 
     // Calcul de la trajectoir
-    for (int j = i-1; j > 0; j--) {
-    	Dp->buf_traine[j].x = Dp->buf_traine[j-1].x;
-    	Dp->buf_traine[j].y = Dp->buf_traine[j-1].y;
+    for (short j = i-1; j > 0; j--) {
+	Dp->buf_traine[j].x = Dp->buf_traine[j-1].x;
+	Dp->buf_traine[j].y = Dp->buf_traine[j-1].y;
     }
 	
     // trainé de la trajectoire
-    for (int j = 0; j < i-1; j++){
-    	cons_ligne(cl, WIDTH, HEIGHT, Dp->buf_traine[j].x, -Dp->buf_traine[j].y, Dp->buf_traine[j+1].x, -Dp->buf_traine[j+1].y, '`');
+    for (short j = 0; j < i-1; j++){
+	PrintLine(cl, Dp->buf_traine[j].x, -Dp->buf_traine[j].y, Dp->buf_traine[j+1].x, -Dp->buf_traine[j+1].y, '`');
     }
 
     // Tige du pendule
-    cons_ligne(cl, WIDTH, HEIGHT, 0, 0, Dp->boule_1.x, -Dp->boule_1.y, '/');
-    cons_ligne(cl, WIDTH, HEIGHT, Dp->boule_1.x, -Dp->boule_1.y, Dp->boule_2.x, -Dp->boule_2.y, '/');
+    PrintLine(cl, 0, 0, Dp->boule_1.x, -Dp->boule_1.y, '/');
+    PrintLine(cl, Dp->boule_1.x, -Dp->boule_1.y, Dp->boule_2.x, -Dp->boule_2.y, '/');
 
     // Masse du pedule
-    cons_cercle(cl, WIDTH, HEIGHT, Dp->boule_1.x, -Dp->boule_1.y, VDp.m1, '*');
-    cons_cercle(cl, WIDTH, HEIGHT, Dp->boule_2.x, -Dp->boule_2.y, VDp.m2, '*');
+    PrintCircle(cl, Dp->boule_1.x+midW, -Dp->boule_1.y+midH, VDp.m1, '*');
+    PrintCircle(cl, Dp->boule_2.x+midW, -Dp->boule_2.y+midH, VDp.m2, '*');
     
     // Ligne entre le centre et le bout du pendule
     Dp->buf_traine[0].x = Dp->boule_2.x;
     Dp->buf_traine[0].y = Dp->boule_2.y;
     
     // Base du pendule
-    cons_cercle(cl, WIDTH, HEIGHT, 0, 0, 1, '#');
+    PrintCircle(cl, midW, midH, 1, '#');
 }
-
 
 
 int main(void)
 {
-    USART_Init(0);
+    USART_Init(3);
 
     Var_Dp Var_Dp1 = {.l1       = 1.0f,
     		      .l2       = 1.0f,
@@ -354,12 +358,7 @@ int main(void)
     // float epsilon = 0.01f;
     Double_pendule Dp1;
     
-    char **console = mem_alloc(HEIGHT, WIDTH);
-    // char ptr_console[HEIGHT][WIDTH];
-    // char *console[WIDTH];
-    // for (int i = 0; i < WIDTH; i++) {
-    // 	console[i] = ptr_console[i];
-    // }
+    GLIPH_INIT(console, WIDTH, HEIGHT);
 
     for (int i = 0;;) {
 
@@ -374,9 +373,8 @@ int main(void)
     	if (i < BUFFER_LENGTH_TRAINE) i++;
     	tracage_double_pendule(i, &Dp1, Var_Dp1, console);
 	
-    	print_cons(console, WIDTH, HEIGHT);
-    	// _delay_ms(300);
+    	PrintConsole(console);
     }
-    mem_free(console, HEIGHT);
+    // mem_free(console, HEIGHT);
     while(1);
 }
