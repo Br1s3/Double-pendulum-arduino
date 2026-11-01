@@ -8,8 +8,12 @@ This program simulates themotion of a double pendulum.
 ```console
 $ make all
 $ make dude
-$ screen /dev/ttyACM0 1000000
+$ screen /dev/ttyACM0 500000
 ```
+
+## Issu:
+
+_The communication can't handle 1Mb/s_
 
 ## To quit screen
 
