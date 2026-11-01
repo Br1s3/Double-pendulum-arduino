@@ -11,7 +11,7 @@ $ make dude
 $ screen /dev/ttyACM0 500000
 ```
 
-## Issu:
+## Issue:
 
 _The communication can't handle 1Mb/s_
 
