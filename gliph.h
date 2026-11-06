@@ -151,7 +151,7 @@
 # define STDOUT_FILENO 1
 #endif
 #define ABS_GLIPH(x) ((x) < 0 ? (-x) : (x))
-#define D2TOD1_GLIPH(x, y, W) (((y)*(W+1)) + (x))
+#define D2TOD1_GLIPH(x, y, W) (((y)*((W)+1)) + (x))
 #define MOVETO_GLIPH(y, x) printf("\033[%d;%dH", (y), (x))
 #define MOVETO0_0_GLIPH  \
     if (write(STDOUT_FILENO, "\033[0;0H", 7) < 0) return -1
@@ -213,6 +213,7 @@ typedef struct
             ((char (*)[(W)+1])name._1d)[i][(W)] = '\n';                \
         }                                                              \
     } while (0)
+
 #define GLIPH_FREE(name) free(name._1d)
 
 #define GLIPH_INIT(name, W, H)                          \
